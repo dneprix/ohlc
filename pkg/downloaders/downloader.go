@@ -13,6 +13,7 @@ import (
 // Downloader interface
 type Downloader interface {
 	Queue() chan (bool)
+	Stop() chan (bool)
 	Logger() *logrus.Entry
 	Name() string
 	DB() *sqlx.DB
@@ -26,6 +27,7 @@ type downloader struct {
 
 	name      string
 	queue     chan (bool)
+	stop      chan (bool)
 	wait      time.Duration
 	waitTimer *time.Timer
 	logger    *logrus.Entry
@@ -36,6 +38,7 @@ func newDownloader(db *sqlx.DB, logger *logrus.Logger, name string, wait time.Du
 		db:        db,
 		name:      name,
 		queue:     make(chan (bool), 1),
+		stop:      make(chan (bool)),
 		wait:      wait,
 		waitTimer: time.NewTimer(0),
 		logger: logger.WithFields(logrus.Fields{
@@ -87,14 +90,16 @@ func ProcessQueue(d Downloader) {
 				}
 				assetLogger.Debug("Candles data was successfull saved")
 			}
-
+		case <-d.Stop():
+			d.Logger().Warn("Stop processing queue")
+			return
 		default:
 			time.Sleep(time.Second)
 		}
 	}
 }
 
-// Queue downloader
+// Queue downloader channel
 func (dl *downloader) Queue() chan (bool) {
 	return dl.queue
 }
@@ -112,6 +117,11 @@ func (dl *downloader) Name() string {
 // DB downloader
 func (dl *downloader) DB() *sqlx.DB {
 	return dl.db
+}
+
+// Stop downloader channel
+func (dl *downloader) Stop() chan (bool) {
+	return dl.stop
 }
 
 // CheckWaitTimer downloader
