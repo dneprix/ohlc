@@ -24,7 +24,8 @@ $ ./ohlc
 7. Architecture allows to add any new downloader with custom configuration, authorizations, etc. You need to write custom methods for your class that overwrites methods from base class.
 8. I don't know full information about how data from database will be used. So structure of tables can be another. I didn't create a lot of INDEXes, because I need to know information about SELECTs for that.
 9. Service supports several LOG levels: "panic","fatal","error","warning","info","debug","trace"
-10. For rate limiting requests I use Timer because Ticker doesn't stable sleep time between requests   
+10. For rate limiting requests I use Timer because Ticker doesn't stable sleep time between requests  
+11. 100% test coverage
 
 ## Examples
 1. Successful log example with tags `asset=BTC/USD/KRAKEN` and `downloader=CRYPTOWAT`
@@ -38,3 +39,6 @@ $ ./ohlc
 
 4. Table `candles` example
 ![](docs/images/table_candles.png)
+
+4. Test coverage `100%`
+![](docs/images/test_coverage.png)
