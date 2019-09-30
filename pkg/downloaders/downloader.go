@@ -53,49 +53,53 @@ func ProcessQueue(d Downloader) {
 		select {
 		case <-d.Queue():
 			d.Logger().Debugf("Process queue: size=%d", len(d.Queue()))
-
-			// Get assets for downloader name
-			downloaderAssets, err := assets.GeеListByDownloaderName(d.DB(), d.Name())
-			if err != nil {
-				d.Logger().Errorf("Get DB downloader assets fail: %s", err)
-				continue
-			}
-
-			// Process each downloader asset
-			for _, asset := range downloaderAssets {
-				assetLogger := assets.Logger(d.Logger(), asset)
-
-				// Check and wait timer since last downloading
-				d.CheckWaitTimer()
-				assetLogger.Warn("Start candles downloading")
-
-				// Download candles
-				candlesData, err := d.DownloadCandles(asset)
-				if err != nil {
-					assetLogger.Errorf("Download candles fail: %s", err)
-					continue
-				}
-
-				// Validate candles
-				if len(candlesData) == 0 {
-					assetLogger.Warn("Download ZERO candles data: Nothing to save")
-					continue
-				}
-
-				// Save candles
-				assetLogger.Debugf("Try to save downloaded candles: %d", len(candlesData))
-				if err := candles.Save(d.DB(), candlesData); err != nil {
-					assetLogger.Errorf("Save candles data fail: %s", err)
-					continue
-				}
-				assetLogger.Debug("Candles data was successfull saved")
-			}
+			ProcessDownloader(d)
 		case <-d.Stop():
 			d.Logger().Warn("Stop processing queue")
 			return
 		default:
 			time.Sleep(time.Second)
 		}
+	}
+}
+
+// ProcessDownloader steps
+func ProcessDownloader(d Downloader) {
+	// Get assets for downloader name
+	downloaderAssets, err := assets.GeеListByDownloaderName(d.DB(), d.Name())
+	if err != nil {
+		d.Logger().Errorf("Get DB downloader assets fail: %s", err)
+		return
+	}
+
+	// Process each downloader asset
+	for _, asset := range downloaderAssets {
+		assetLogger := assets.Logger(d.Logger(), asset)
+
+		// Check and wait timer since last downloading
+		d.CheckWaitTimer()
+		assetLogger.Warn("Start candles downloading")
+
+		// Download candles
+		candlesData, err := d.DownloadCandles(asset)
+		if err != nil {
+			assetLogger.Errorf("Download candles fail: %s", err)
+			continue
+		}
+
+		// Validate candles
+		if len(candlesData) == 0 {
+			assetLogger.Warn("Download ZERO candles data: Nothing to save")
+			continue
+		}
+
+		// Save candles
+		assetLogger.Debugf("Try to save downloaded candles: %d", len(candlesData))
+		if err := candles.Save(d.DB(), candlesData); err != nil {
+			assetLogger.Errorf("Save candles data fail: %s", err)
+			continue
+		}
+		assetLogger.Debug("Candles data was successfull saved")
 	}
 }
 
