@@ -10,6 +10,7 @@ import (
 type Candle struct {
 	ID         uint    `db:"id"`
 	AssetID    uint    `db:"asset_id"`
+	Period     uint    `db:"period"`
 	CloseTime  int64   `db:"close_time"`
 	OpenPrice  float32 `db:"open_price"`
 	HighPrice  float32 `db:"high_price"`
@@ -22,6 +23,7 @@ type Candle struct {
 func Save(db *sqlx.DB, candles []*Candle) error {
 	sqls := `INSERT INTO candles(
         asset_id,
+        period,
         close_time,
         open_price,
         high_price,
@@ -30,6 +32,7 @@ func Save(db *sqlx.DB, candles []*Candle) error {
         volume
       ) VALUES(
         :asset_id,
+        :period,
         to_timestamp(:close_time),
         :open_price,
         :high_price,

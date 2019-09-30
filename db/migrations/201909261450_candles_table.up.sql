@@ -2,6 +2,7 @@ CREATE TABLE candles
 (
   id serial,
   asset_id int references assets(id),
+  period int NOT NULL,
   close_time timestamp NOT NULL,
   open_price numeric NOT NULL,
   high_price numeric NOT NULL,

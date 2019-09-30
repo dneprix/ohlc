@@ -14,7 +14,7 @@ import (
 	"github.com/dneprix/ohlc/pkg/candles"
 )
 
-const cryptowatWaitTime = 20 * time.Second
+const cryptowatWaitTime = 5 * time.Second
 
 // CryptowatDownloader structure
 type CryptowatDownloader struct {
@@ -46,10 +46,11 @@ func (cd *CryptowatDownloader) DownloadCandles(asset *assets.Asset) ([]*candles.
 		return nil, fmt.Errorf("Parse response fail: %s", err)
 	}
 
-	candlesData := make([]*candles.Candle, 0, len(candlesResponse.Result.Period))
-	for _, period := range candlesResponse.Result.Period {
+	candlesData := make([]*candles.Candle, 0, len(candlesResponse.Result.Period60))
+	for _, period := range candlesResponse.Result.Period60 {
 		candlesData = append(candlesData, &candles.Candle{
 			AssetID:    asset.ID,
+			Period:     60,
 			CloseTime:  period.CloseTime,
 			OpenPrice:  period.OpenPrice,
 			HighPrice:  period.HighPrice,
@@ -65,7 +66,7 @@ func (cd *CryptowatDownloader) DownloadCandles(asset *assets.Asset) ([]*candles.
 // CryptowatResponse structure
 type CryptowatResponse struct {
 	Result struct {
-		Period []CryptowatResponsePeriod `json:"60"`
+		Period60 []CryptowatResponsePeriod `json:"60"`
 	} `json:"result"`
 }
 
