@@ -16,8 +16,32 @@ type Downloader interface {
 	Logger() *logrus.Entry
 	Name() string
 	DB() *sqlx.DB
+	CheckWaitTimer()
 
 	DownloadCandles(*assets.Asset) ([]*candles.Candle, error)
+}
+
+type downloader struct {
+	db *sqlx.DB
+
+	name      string
+	queue     chan (bool)
+	wait      time.Duration
+	waitTimer *time.Timer
+	logger    *logrus.Entry
+}
+
+func newDownloader(db *sqlx.DB, logger *logrus.Logger, name string, wait time.Duration) *downloader {
+	return &downloader{
+		db:        db,
+		name:      name,
+		queue:     make(chan (bool), 1),
+		wait:      wait,
+		waitTimer: time.NewTimer(0),
+		logger: logger.WithFields(logrus.Fields{
+			"downloader": name,
+		}),
+	}
 }
 
 // ProcessQueue is a goroutine for processing downloader queue
@@ -34,21 +58,28 @@ func ProcessQueue(d Downloader) {
 				continue
 			}
 
-			// Download and save candles for each asset
+			// Process each downloader asset
 			for _, asset := range downloaderAssets {
 				assetLogger := assets.Logger(d.Logger(), asset)
 
+				// Check and wait timer since last downloading
+				d.CheckWaitTimer()
+				assetLogger.Warn("Start candles downloading")
+
+				// Download candles
 				candlesData, err := d.DownloadCandles(asset)
 				if err != nil {
 					assetLogger.Errorf("Download candles fail: %s", err)
 					continue
 				}
 
+				// Validate candles
 				if len(candlesData) == 0 {
 					assetLogger.Warn("Download ZERO candles data: Nothing to save")
 					continue
 				}
 
+				// Save candles
 				assetLogger.Debugf("Try to save downloaded candles: %d", len(candlesData))
 				if err := candles.Save(d.DB(), candlesData); err != nil {
 					assetLogger.Errorf("Save candles data fail: %s", err)
@@ -60,25 +91,6 @@ func ProcessQueue(d Downloader) {
 		default:
 			time.Sleep(time.Second)
 		}
-	}
-}
-
-type downloader struct {
-	db *sqlx.DB
-
-	name   string
-	queue  chan (bool)
-	logger *logrus.Entry
-}
-
-func newDownloader(db *sqlx.DB, logger *logrus.Logger, name string) *downloader {
-	return &downloader{
-		db:    db,
-		name:  name,
-		queue: make(chan (bool), 1),
-		logger: logger.WithFields(logrus.Fields{
-			"downloader": name,
-		}),
 	}
 }
 
@@ -100,4 +112,10 @@ func (dl *downloader) Name() string {
 // DB downloader
 func (dl *downloader) DB() *sqlx.DB {
 	return dl.db
+}
+
+// CheckWaitTimer downloader
+func (dl *downloader) CheckWaitTimer() {
+	<-dl.waitTimer.C
+	dl.waitTimer.Reset(dl.wait)
 }

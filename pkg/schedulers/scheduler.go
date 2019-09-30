@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const timerDuration = time.Minute
+const timerDuration = time.Minute / 30
 
 // Scheduler structure
 type Scheduler struct {

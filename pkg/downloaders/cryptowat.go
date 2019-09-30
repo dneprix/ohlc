@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -13,9 +14,52 @@ import (
 	"github.com/dneprix/ohlc/pkg/candles"
 )
 
+const cryptowatWaitTime = 20 * time.Second
+
 // CryptowatDownloader structure
 type CryptowatDownloader struct {
 	*downloader
+}
+
+// NewCryptowatDownloader constructor
+func NewCryptowatDownloader(db *sqlx.DB, logger *logrus.Logger) *CryptowatDownloader {
+	return &CryptowatDownloader{
+		newDownloader(db, logger, "CRYPTOWAT", cryptowatWaitTime),
+	}
+}
+
+// DownloadCandles function
+func (cd *CryptowatDownloader) DownloadCandles(asset *assets.Asset) ([]*candles.Candle, error) {
+
+	res, err := http.Get(asset.URL)
+	if err != nil {
+		return nil, fmt.Errorf("Get HTTP Request fail: %s", err)
+	}
+	data, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Read response body fail: %s", err)
+	}
+
+	candlesResponse := CryptowatResponse{}
+	if err := json.Unmarshal(data, &candlesResponse); err != nil {
+		return nil, fmt.Errorf("Parse response fail: %s", err)
+	}
+
+	candlesData := make([]*candles.Candle, 0, len(candlesResponse.Result.Period))
+	for _, period := range candlesResponse.Result.Period {
+		candlesData = append(candlesData, &candles.Candle{
+			AssetID:    asset.ID,
+			CloseTime:  period.CloseTime,
+			OpenPrice:  period.OpenPrice,
+			HighPrice:  period.HighPrice,
+			LowPrice:   period.LowPrice,
+			ClosePrice: period.ClosePrice,
+			Volume:     period.Volume,
+		})
+	}
+
+	return candlesData, nil
 }
 
 // CryptowatResponse structure
@@ -49,44 +93,4 @@ func (crp *CryptowatResponsePeriod) UnmarshalJSON(buf []byte) error {
 		return fmt.Errorf("Parse response period fail: %s", err)
 	}
 	return nil
-}
-
-// NewCryptowatDownloader constructor
-func NewCryptowatDownloader(db *sqlx.DB, logger *logrus.Logger) *CryptowatDownloader {
-	return &CryptowatDownloader{
-		newDownloader(db, logger, "CRYPTOWAT"),
-	}
-}
-
-// DownloadCandles function
-func (cd *CryptowatDownloader) DownloadCandles(asset *assets.Asset) ([]*candles.Candle, error) {
-	res, err := http.Get(asset.URL)
-	if err != nil {
-		return nil, fmt.Errorf("Get HTTP Request fail: %s", err)
-	}
-	data, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		return nil, fmt.Errorf("Read response body fail: %s", err)
-	}
-
-	candlesResponse := CryptowatResponse{}
-	if err := json.Unmarshal(data, &candlesResponse); err != nil {
-		return nil, fmt.Errorf("Parse response fail: %s", err)
-	}
-
-	candlesData := make([]*candles.Candle, 0, len(candlesResponse.Result.Period))
-	for _, period := range candlesResponse.Result.Period {
-		candlesData = append(candlesData, &candles.Candle{
-			AssetID:    asset.ID,
-			CloseTime:  period.CloseTime,
-			OpenPrice:  period.OpenPrice,
-			HighPrice:  period.HighPrice,
-			LowPrice:   period.LowPrice,
-			ClosePrice: period.ClosePrice,
-			Volume:     period.Volume,
-		})
-	}
-
-	return candlesData, nil
 }

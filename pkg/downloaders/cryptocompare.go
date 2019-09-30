@@ -1,12 +1,16 @@
 package downloaders
 
 import (
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 
 	"github.com/dneprix/ohlc/pkg/assets"
 	"github.com/dneprix/ohlc/pkg/candles"
 )
+
+const cryptocompareWaitTime = 10 * time.Second
 
 // CryptocompareDownloader structure
 type CryptocompareDownloader struct {
@@ -16,7 +20,7 @@ type CryptocompareDownloader struct {
 // NewCryptocompareDownloader constructor
 func NewCryptocompareDownloader(db *sqlx.DB, logger *logrus.Logger) *CryptocompareDownloader {
 	return &CryptocompareDownloader{
-		newDownloader(db, logger, "CRYPTOCOMPARE"),
+		newDownloader(db, logger, "CRYPTOCOMPARE", cryptocompareWaitTime),
 	}
 }
 
