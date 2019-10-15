@@ -29,11 +29,6 @@ func (m *mockDownloader) Stop() chan (bool) {
 	return m.stop
 }
 
-// func (m *mockDownloader) Name() string                                                   {}
-// func (m *mockDownloader) DB() *sqlx.DB                                                   {}
-// func (m *mockDownloader) CheckWaitTimer()                                                {}
-// func (m *mockDownloader) DownloadCandles(asset *assets.Asset) ([]*candles.Candle, error) {}
-
 func TestNewSheduler(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	s := NewSheduler(logger)

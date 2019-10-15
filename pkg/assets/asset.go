@@ -17,8 +17,8 @@ type Asset struct {
 	URL        string `db:"url"`
 }
 
-// GeеListByDownloaderName from database
-func GeеListByDownloaderName(db *sqlx.DB, name string) ([]*Asset, error) {
+// GetListByDownloaderName from database
+func GetListByDownloaderName(db *sqlx.DB, name string) ([]*Asset, error) {
 	assets := []*Asset{}
 	if err := db.Select(&assets, "SELECT * FROM assets WHERE downloader=$1", name); err != nil {
 		return nil, err

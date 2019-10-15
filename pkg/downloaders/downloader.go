@@ -66,7 +66,7 @@ func ProcessQueue(d Downloader) {
 // ProcessDownloader steps
 func ProcessDownloader(d Downloader) {
 	// Get assets for downloader name
-	downloaderAssets, err := assets.GeеListByDownloaderName(d.DB(), d.Name())
+	downloaderAssets, err := assets.GetListByDownloaderName(d.DB(), d.Name())
 	if err != nil {
 		d.Logger().Errorf("Get DB downloader assets fail: %s", err)
 		return

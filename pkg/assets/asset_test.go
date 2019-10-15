@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGeеListByDownloaderNameSuccess(t *testing.T) {
+func TestGetListByDownloaderNameSuccess(t *testing.T) {
 	mockDB, mock, _ := sqlmock.New()
 	defer mockDB.Close()
 	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
@@ -39,13 +39,13 @@ func TestGeеListByDownloaderNameSuccess(t *testing.T) {
 		"SELECT \\* FROM assets WHERE downloader=\\$1",
 	).WithArgs(expectedAssets[0].Downloader).WillReturnRows(rows)
 
-	actualAssets, err := GeеListByDownloaderName(sqlxDB, expectedAssets[0].Downloader)
+	actualAssets, err := GetListByDownloaderName(sqlxDB, expectedAssets[0].Downloader)
 
 	assert.Equal(t, expectedAssets, actualAssets)
 	assert.NoError(t, err)
 }
 
-func TestGeеListByDownloaderNameFail(t *testing.T) {
+func TestGetListByDownloaderNameFail(t *testing.T) {
 	mockDB, mock, _ := sqlmock.New()
 	defer mockDB.Close()
 	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
@@ -54,7 +54,7 @@ func TestGeеListByDownloaderNameFail(t *testing.T) {
 	expectedDownloader := "DOWNLOADER"
 	mock.ExpectQuery("SELECT").WithArgs(expectedDownloader).WillReturnError(expectedError)
 
-	actualAssets, err := GeеListByDownloaderName(sqlxDB, expectedDownloader)
+	actualAssets, err := GetListByDownloaderName(sqlxDB, expectedDownloader)
 
 	assert.Nil(t, actualAssets)
 	assert.Error(t, err)
